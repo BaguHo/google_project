@@ -2,22 +2,24 @@
     <div class="body-style">
         <div class="menu">
             <div class="menu-header">
-                <div class="menu-content">
-                    <a href="/label/">
-                        <button class="signup-btn-style">Home</button>
-                    </a>
-                    <a href="/label/signup/">
-                        <button class="signup-btn-style">Sign up</button>
-                    </a>
-                    <a href="/label/admin/">
-                        <button class="signup-btn-style">Admin</button>
-                    </a>
-                    <a href="/label/admin/imagetestcode/">
-                        <button class="signup-btn-style">Image Test Code</button>
-                    </a>
+                <div class="menu-content" style="justify-content: space-between;">
                     <a href="/label/admin/upload">
                         <button class="signup-btn-style">Video Upload</button>
                     </a>
+                    <div>
+                        <a href="/label/">
+                            <button class="signup-btn-style">Home</button>
+                        </a>
+                        <a href="/label/signup/">
+                            <button class="signup-btn-style">Sign up</button>
+                        </a>
+                        <a href="/label/admin/">
+                            <button class="signup-btn-style">Admin</button>
+                        </a>
+                        <a href="/label/admin/imagetestcode/">
+                            <button class="signup-btn-style">Image Test Code</button>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

@@ -19,9 +19,10 @@
                         <div style="margin: 15px;">
                             <div id="left-video-cover">
                                 <div style="display: flex;">
+                                    <!-- TODO: leftOriginalVideo() -->
                                     <video id="videoNoartifact" :style="videoStyles" class="video-style"
                                         ref="videoNoartifact" controlsList="nodownload" key="videoNoartifact"
-                                        :src="leftOriginalVideo()" @wheel="handleWheel" @click="setZoomCenter"
+                                        :src="tempVideo" @wheel="handleWheel" @click="setZoomCenter"
                                         @mousedown="handleDragStart" @mouseup="handleDragEnd" @mousemove="handleDragging"
                                         onChange="isVideoPaused" preload="auto">
                                     </video>
@@ -35,9 +36,10 @@
                         </div>
                         <div style="margin: 15px;">
                             <div id="right-video-cover">
+                                <!-- TODO: rightArtifactVideo() -->
                                 <video id="videoYesartifact" :style="videoStyles" :class="video - style" class="video-style"
                                     ref="videoYesartifact" controlsList="nodownload" key="videoYesartifact"
-                                    :src="rightArtifactVideo()" @wheel="handleWheel" @click="setZoomCenter"
+                                    :src="tempVideo2" @wheel="handleWheel" @click="setZoomCenter"
                                     @mousedown="handleDragStart" @mouseup="handleDragEnd" @mousemove="handleDragging"
                                     onChange="isVideoPaused" preload="auto">
                                 </video>
@@ -84,16 +86,23 @@
                         <button v-on="click" class="btn-style"
                             style="font-size: x-large; width: 80px; height: 40px; padding-top: 0px;"
                             @click="[changeBackVideo()]">prev</button>
-                        <button v-on="click" class="btn-style"
+                        <button v-on="click"
+                            :class="{ 'clicked-btn-style': this.isInSelectedArtifecFrame, 'btn-style': !this.isInSelectedArtifecFrame }"
                             style="font-size: x-large; width: 100px; height: 40px; padding-top: 0px;"
                             @click="[selectArtifactFrame()]">check</button>
+                        <button v-on="click" class="btn-style"
+                            style="font-size: x-large; width: 100px; height: 40px; padding-top: 0px;"
+                            @click="submitSelectedArtifactFrame()">submit</button>
                         <button v-on="click" class="btn-style"
                             style="font-size: x-large; width: 80px; height: 40px; padding-top: 0px;"
                             @click="[changeNextVideo()]">next</button>
                     </div>
                 </div>
+                <div>{{ this.isInSelectedArtifecFrame }}</div>
+                <div>{{ this.isSelectedArtifecFrame.length }}</div>
             </div>
         </div>
+        <div v-for="i in this.isSelectedArtifecFrame" :key="i">{{ i }}</div>
         <div class="footer">
             <p>Copyright © 2023 Pi:Lab, SMU. All rights reserved.</p>
             <p>help@pilab.smu.ac.kr</p>
@@ -142,9 +151,10 @@ export default {
             videoOriginalWidth: 0,
             videoCurrentTime: 0.00,
             videoDuration: 0.00,
-            // tempVideo: require("./original.mp4"),
-            // tempVideo2: require("./denoise.mp4"),
-            selectedVideoTime: 0.00,
+            tempVideo: require("./original.mp4"),
+            tempVideo2: require("./denoise.mp4"),
+            selectedVideoFrame: [],
+            isInSelectedArtifecFrame: false,
         }
     },
     created() {
@@ -170,6 +180,17 @@ export default {
         },
     },
     methods: {
+        isSelectedArtifecFrame() {
+            var video = document.getElementById("videoNoartifact");
+            const videoCurrentTime = +(parseFloat(video.currentTime.toFixed(4)));
+
+            // 두 번째 값들만 추출하여 새로운 배열 생성
+            const secondValues = this.selectedVideoFrame.map(item => item[1]);
+            // 새로운 배열에서 현재 비디오 시간의 인덱스 찾기
+            const index = secondValues.indexOf(videoCurrentTime);
+            this.isInSelectedArtifecFrame = index > -1;
+            // index.indexOf(videoCurrentTime) > -1 ? this.isInSelectedArtifecFrame = true : this.isInSelectedArtifecFrame = false;
+        },
         getVideoIndex() {
             axios
                 .get(this.baseUrl + "admin/getVideoIndex", {
@@ -188,7 +209,21 @@ export default {
         // frame을 선택하면 백엔드로 요청을 보내는 함수
         async selectArtifactFrame() {
             var video = document.getElementById("videoNoartifact");
-            this.selectedVideoTime = video.currentTime;
+            const videoCurrentTime = +(parseFloat(video.currentTime.toFixed(4)));
+
+            // 두 번째 값들만 추출하여 새로운 배열 생성
+            const secondValues = this.selectedVideoFrame.map(item => item[1]);
+
+            // 두 번째 값들에서 현재 추가하려는 값이 없으면 추가
+            if (secondValues.indexOf(videoCurrentTime) <= -1) {
+                this.selectedVideoFrame.push([this.videoNameIndex, +videoCurrentTime]);
+            }
+            console.log("secondValues: " + secondValues)
+            console.log("selected frame: " + videoCurrentTime);
+            console.log("selected frame length: " + this.selectedVideoFrame.length);
+        },
+        // TODO: 
+        async submitSelectedArtifactFrame() {
             axios
                 .post(this.baseUrl + "admin/selectArtifactFrame", {
                     videoIndex: this.videoIndex,
@@ -226,14 +261,17 @@ export default {
                 case 'Enter':
                     e.preventDefault();
                     this.selectArtifactFrame();
+                    this.isSelectedArtifecFrame();
                     break;
                 case 'ArrowLeft':
                     e.preventDefault();
                     this.seekBackward();
+                    this.isSelectedArtifecFrame();
                     break;
                 case 'ArrowRight':
                     e.preventDefault();
                     this.seekForward();
+                    this.isSelectedArtifecFrame();
                     break;
                 case '0':
                     this.toggleButton(0);
@@ -266,8 +304,9 @@ export default {
         goToEnd() {
             var video1 = document.getElementById('videoNoartifact');
             var video2 = document.getElementById('videoYesartifact');
-            const originalFrame = this.originalVideoFrameList[this.videoNameIndex];
-            const temp = video1.duration - (1 / originalFrame) * 2;
+            const videoFrame = 1 / 30;
+            // const originalFrame = this.originalVideoFrameList[this.videoNameIndex];
+            const temp = video1.duration - videoFrame * 2;
             video1.currentTime = temp;
             video2.currentTime = temp;
         },
@@ -556,15 +595,19 @@ export default {
             const video2 = this.$refs.videoYesartifact;
 
             // videoFrame을 하나로 통일 했음
-            const videoFrame = this.videoFrameList[this.videoNameIndex];
+            // const videoFrame = this.videoFrameList[this.videoNameIndex];
+            const videoFrame = +(parseFloat((1 / 30).toFixed(4)));
+
             if (videoFrame != 0) {
-                if (videoFrame) {
-                    if (video1.currentTime - videoFrame <= 0 || video2.currentTime - videoFrame <= 0) {
-                        return;
-                    }
-                    video1.currentTime -= videoFrame;
-                    video2.currentTime -= videoFrame;
+                if (video1.currentTime - videoFrame <= 0 || video2.currentTime - videoFrame <= 0) {
+                    video1.currentTime = 0;
+                    video2.currentTime = 0;
                 }
+                const video1CurrentTime = +(parseFloat(video1.currentTime.toFixed(4)));
+                const video2CurrentTime = +(parseFloat(video1.currentTime.toFixed(4)));
+                video1.currentTime = parseFloat((video1CurrentTime - videoFrame).toFixed(4));
+                video2.currentTime = parseFloat((video2CurrentTime - videoFrame).toFixed(4));
+                console.log(video1.currentTime)
             }
         },
         async seekForward() {
@@ -572,15 +615,19 @@ export default {
             const video2 = this.$refs.videoYesartifact;
 
             // videoFrame을 하나로 통일 했음
-            const videoFrame = this.videoFrameList[this.videoNameIndex];
+            // const videoFrame = this.videoFrameList[this.videoNameIndex];
+            const videoFrame = +(parseFloat((1 / 30).toFixed(4)));
+
             if (videoFrame != 0) {
-                if (videoFrame) {
-                    if (video1.currentTime - videoFrame * 3 >= video1.duration || video2.currentTime - videoFrame * 3 >= video1.duration) {
-                        return;
-                    }
-                    video1.currentTime += videoFrame;
-                    video2.currentTime += videoFrame;
+                if (video1.currentTime + videoFrame >= video1.duration || video2.currentTime + videoFrame >= video1.duration) {
+                    video1.currentTime = video1.duration;
+                    video2.currentTime = video2.duration;
                 }
+                const video1CurrentTime = +(parseFloat(video1.currentTime.toFixed(4)));
+                const video2CurrentTime = +(parseFloat(video1.currentTime.toFixed(4)));
+                video1.currentTime = parseFloat((video1CurrentTime + videoFrame).toFixed(4));
+                video2.currentTime = parseFloat((video2CurrentTime + videoFrame).toFixed(4));
+                console.log(video1.currentTime)
             }
         },
     },

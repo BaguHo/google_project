@@ -5,6 +5,7 @@
                 <div class="menu-header" style="display: flex;">
                     <div class="menu-content" style="margin-right: 0; justify-content: space-between;">
                         <div class="progressBar">
+                            <div style="margin-right: 10px; margin-top: 15px;">Progess Bar</div>
                             <div v-for="i in progressBarLength" :key="i"
                                 :class="progressBarCount[i - 1] == progressBarList[i - 1] ? 'progressBar-item' : 'progressBar-item-empty'"
                                 @click="toggleProgressModal((i - 1))">
@@ -602,8 +603,8 @@ export default {
                 })
                 .catch((error) => {
                     console.log(error);
-                    alert("login failed")
-                    this.$router.push(process.env.BASE_URL);
+                    // alert("login failed")
+                    // this.$router.push(process.env.BASE_URL);
                 })
         },
         navigateTo(item) {
